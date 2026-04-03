@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'qimen_engine.dart';
 import 'qimen_models.dart';
@@ -13,10 +14,11 @@ class QimenPage extends StatefulWidget {
 class _QimenPageState extends State<QimenPage> {
   DateTime _selectedDateTime = DateTime.now();
   bool _useAutoDunType = true;
+  bool _useAutoBureau = true;
   QimenDunType _manualDunType = QimenDunType.yang;
   QimenPanMode _panMode = QimenPanMode.zhuan;
   QimenSetupMethod _setupMethod = QimenSetupMethod.chaibu;
-  int _bureau = 1;
+  int _manualBureau = 1;
   late QimenPan _pan;
 
   @override
@@ -26,13 +28,15 @@ class _QimenPageState extends State<QimenPage> {
   }
 
   QimenPan _buildPan() {
+    print('>>> _buildPan called with: $_selectedDateTime');
     return QimenEngine.generate(
       dateTime: _selectedDateTime,
       manualDunType: _manualDunType,
       useAutoDunType: _useAutoDunType,
       panMode: _panMode,
       setupMethod: _setupMethod,
-      bureau: _bureau,
+      manualBureau: _manualBureau,
+      useAutoBureau: _useAutoBureau,
     );
   }
 
@@ -47,6 +51,7 @@ class _QimenPageState extends State<QimenPage> {
       return;
     }
 
+    print('选择日期: ${picked.year}-${picked.month}-${picked.day}');
     setState(() {
       _selectedDateTime = DateTime(
         picked.year,
@@ -56,6 +61,7 @@ class _QimenPageState extends State<QimenPage> {
         _selectedDateTime.minute,
       );
       _pan = _buildPan();
+      print('日期更新后盘: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}');
     });
   }
 
@@ -81,9 +87,50 @@ class _QimenPageState extends State<QimenPage> {
   }
 
   void _recalculate() {
+    print('重新排盘: $_selectedDateTime');
     setState(() {
       _pan = _buildPan();
+      print('新盘生成: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}');
     });
+  }
+
+  String _generateCopyText() {
+    final buffer = StringBuffer();
+    // 基本信息
+    buffer.writeln('【奇门遁甲排盘】');
+    buffer.writeln('时间：${QimenEngine.formatDateTime(_pan.generatedAt)}');
+    buffer.writeln('四柱：${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}');
+    buffer.writeln('${_pan.yuan} ${_pan.dunType.label}${_pan.bureau}局');
+    buffer.writeln('旬首：${_pan.xunShou}${_pan.xunYi} 空亡：${_pan.kongWang}');
+    buffer.writeln('值符：${_pan.valueStar} 值使：${_pan.valueGate} 马星：${_pan.horseStar}');
+    buffer.writeln();
+    // 九宫信息
+    for (final cell in _pan.cells) {
+      if (cell.isCenter) {
+        buffer.writeln('中宫 天盘${cell.heavenStem}');
+      } else {
+        final starText = cell.hasTianQinStar 
+            ? '${cell.tianQinStem}${cell.star}禽' 
+            : cell.star;
+        final heavenText = cell.hasTianQinStar 
+            ? '${cell.tianQinStem}${cell.heavenStem}' 
+            : cell.heavenStem;
+        final earthText = cell.hasTianQinStem
+            ? '${cell.tianQinStem}${cell.earthStem}'
+            : cell.earthStem;
+        final kongWangText = cell.isKongWang ? ' 空亡' : '';
+        buffer.writeln('${cell.palaceName} ${cell.deity} $starText ${cell.gate} 天盘$heavenText 地盘$earthText$kongWangText');
+      }
+    }
+    return buffer.toString();
+  }
+
+  void _copyToClipboard() {
+    final text = _generateCopyText();
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('排盘信息已复制'), duration: Duration(seconds: 2)),
+    );
   }
 
   @override
@@ -96,6 +143,13 @@ class _QimenPageState extends State<QimenPage> {
         centerTitle: true,
         backgroundColor: const Color(0xFF3C2A18),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            onPressed: _copyToClipboard,
+            icon: const Icon(Icons.copy),
+            tooltip: '复制排盘信息',
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -274,32 +328,6 @@ class _QimenPageState extends State<QimenPage> {
                 )
                 .toList(growable: false),
           ),
-          const SizedBox(height: 16),
-          Text(
-            '局数',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF6A4522),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(
-              9,
-              (index) => ChoiceChip(
-                label: Text('${index + 1}局'),
-                selected: _bureau == index + 1,
-                onSelected: (_) {
-                  setState(() {
-                    _bureau = index + 1;
-                    _pan = _buildPan();
-                  });
-                },
-              ),
-            ),
-          ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: _recalculate,
@@ -313,6 +341,7 @@ class _QimenPageState extends State<QimenPage> {
 
   Widget _buildSummaryCard(ThemeData theme) {
     return _PaperCard(
+      key: ValueKey(_pan.generatedAt),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -333,18 +362,18 @@ class _QimenPageState extends State<QimenPage> {
                 value: QimenEngine.formatDateTime(_pan.generatedAt),
               ),
               _SummaryBadge(title: '节气', value: _pan.solarTerm),
-              _SummaryBadge(title: '遁法', value: _pan.dunType.label),
-              _SummaryBadge(title: '排盘', value: _pan.panMode.label),
-              _SummaryBadge(title: '起局', value: _pan.setupMethod.label),
-              _SummaryBadge(title: '局数', value: '${_pan.bureau}局'),
+              _SummaryBadge(title: '三元', value: _pan.yuan),
+              _SummaryBadge(title: '局数', value: '${_pan.dunType.label}${_pan.bureau}局'),
               _SummaryBadge(title: '年柱', value: _pan.yearGanzhi),
               _SummaryBadge(title: '月柱', value: _pan.monthGanzhi),
               _SummaryBadge(title: '日柱', value: _pan.dayGanzhi),
               _SummaryBadge(title: '时柱', value: _pan.hourGanzhi),
               _SummaryBadge(title: '时辰', value: _pan.hourLabel),
-              _SummaryBadge(title: '值符', value: _pan.chiefDeity),
+              _SummaryBadge(title: '旬首', value: '${_pan.xunShou}${_pan.xunYi}'),
+              _SummaryBadge(title: '空亡', value: _pan.kongWang),
+              _SummaryBadge(title: '值符', value: _pan.valueStar),
               _SummaryBadge(title: '值使', value: _pan.valueGate),
-              _SummaryBadge(title: '值星', value: _pan.valueStar),
+              _SummaryBadge(title: '马星', value: _pan.horseStar),
             ],
           ),
         ],
@@ -388,16 +417,21 @@ class _QimenPageState extends State<QimenPage> {
 
   Widget _buildPanGrid(ThemeData theme) {
     final rows = <TableRow>[];
+    final key = ValueKey('pan_${_pan.generatedAt.millisecondsSinceEpoch}');
     for (var row = 0; row < 3; row++) {
       final children = <Widget>[];
       for (var column = 0; column < 3; column++) {
         final cell = _pan.cells[row * 3 + column];
-        children.add(_PanCellWidget(cell: cell));
+        children.add(_PanCellWidget(
+          key: ValueKey('cell_${cell.palaceNumber}_${_pan.generatedAt.millisecondsSinceEpoch}'),
+          cell: cell,
+        ));
       }
       rows.add(TableRow(children: children));
     }
 
     return Table(
+      key: key,
       border: TableBorder.all(
         color: const Color(0xFF7E5730),
         width: 1.2,
@@ -422,7 +456,7 @@ class _QimenPageState extends State<QimenPage> {
 }
 
 class _PanCellWidget extends StatelessWidget {
-  const _PanCellWidget({required this.cell});
+  const _PanCellWidget({super.key, required this.cell});
 
   final QimenPanCell cell;
 
@@ -433,51 +467,90 @@ class _PanCellWidget extends StatelessWidget {
         : const Color(0xFFE7D0A2);
 
     return Container(
-      height: 148,
+      constraints: const BoxConstraints(minHeight: 176),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(color: accent.withValues(alpha: 0.45)),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${cell.palaceName} · ${cell.palaceNumber}',
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF523015),
+          Row(
+            children: [
+              Text(
+                '${cell.palaceName} · ${cell.palaceNumber}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF523015),
+                ),
+              ),
+              if (cell.isKongWang) ...[
+                const SizedBox(width: 4),
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFD4483B), width: 1.5),
+                  ),
+                  child: const Center(
+                    child: Text('空', style: TextStyle(fontSize: 8, color: Color(0xFFD4483B))),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          // 中宫只显示天干，不显示神星门
+          if (cell.isCenter) ...[
+            const SizedBox(height: 40),
+            Center(
+              child: Text(
+                cell.heavenStem,
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF5E2B16),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _InlineTag(
-            label: cell.deity,
-            backgroundColor: const Color(0xFF3C2A18),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            cell.star,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF5E2B16),
+          ] else ...[
+            const SizedBox(height: 8),
+            if (cell.deity.isNotEmpty)
+              _InlineTag(
+                label: cell.deity,
+                backgroundColor: const Color(0xFF3C2A18),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              cell.hasTianQinStar ? '${cell.tianQinStem}${cell.star}禽' : cell.star,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5E2B16),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            cell.gate,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF7B401C),
+            const SizedBox(height: 4),
+            Text(
+              cell.gate,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF7B401C),
+              ),
             ),
-          ),
-          const Spacer(),
-          Text(
-            '天盘 ${cell.heavenStem}',
-            style: const TextStyle(color: Color(0xFF5E412B)),
-          ),
-          Text(
-            '地盘 ${cell.earthStem}',
-            style: const TextStyle(color: Color(0xFF5E412B)),
-          ),
+            const SizedBox(height: 10),
+            Text(
+              cell.hasTianQinStar 
+                ? '天盘 ${cell.tianQinStem}${cell.heavenStem}'
+                : '天盘 ${cell.heavenStem}',
+              style: const TextStyle(color: Color(0xFF5E412B)),
+            ),
+            Text(
+              cell.hasTianQinStem
+                ? '地盘 ${cell.tianQinStem}${cell.earthStem}'
+                : '地盘 ${cell.earthStem}',
+              style: const TextStyle(color: Color(0xFF5E412B)),
+            ),
+          ],
         ],
       ),
     );
@@ -485,7 +558,7 @@ class _PanCellWidget extends StatelessWidget {
 }
 
 class _PaperCard extends StatelessWidget {
-  const _PaperCard({required this.child});
+  const _PaperCard({super.key, required this.child});
 
   final Widget child;
 

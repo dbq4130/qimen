@@ -35,6 +35,10 @@ class QimenPanCell {
     required this.heavenStem,
     required this.earthStem,
     required this.isCenter,
+    required this.isKongWang,
+    required this.hasTianQinStar,
+    required this.hasTianQinStem,
+    required this.tianQinStem,
   });
 
   final int palaceNumber;
@@ -45,6 +49,10 @@ class QimenPanCell {
   final String heavenStem;
   final String earthStem;
   final bool isCenter;
+  final bool isKongWang;
+  final bool hasTianQinStar;
+  final bool hasTianQinStem;
+  final String tianQinStem;
 }
 
 class QimenPan {
@@ -63,6 +71,11 @@ class QimenPan {
     required this.valueStar,
     required this.valueGate,
     required this.chiefDeity,
+    required this.xunShou,
+    required this.xunYi,
+    required this.horseStar,
+    required this.yuan,
+    required this.kongWang,
     required this.note,
     required this.cells,
   });
@@ -81,6 +94,11 @@ class QimenPan {
   final String valueStar;
   final String valueGate;
   final String chiefDeity;
+  final String xunShou;
+  final String xunYi;
+  final String horseStar;
+  final String yuan;
+  final String kongWang;
   final String note;
   final List<QimenPanCell> cells;
 }
