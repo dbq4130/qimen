@@ -36,6 +36,7 @@ class QimenPanCell {
     required this.earthStem,
     required this.isCenter,
     required this.isKongWang,
+    required this.isHorseStar,
     required this.hasTianQinStar,
     required this.hasTianQinStem,
     required this.tianQinStem,
@@ -50,6 +51,7 @@ class QimenPanCell {
   final String earthStem;
   final bool isCenter;
   final bool isKongWang;
+  final bool isHorseStar;
   final bool hasTianQinStar;
   final bool hasTianQinStem;
   final String tianQinStem;

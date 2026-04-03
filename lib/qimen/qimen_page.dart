@@ -17,7 +17,6 @@ class _QimenPageState extends State<QimenPage> {
   bool _useAutoBureau = true;
   QimenDunType _manualDunType = QimenDunType.yang;
   QimenPanMode _panMode = QimenPanMode.zhuan;
-  QimenSetupMethod _setupMethod = QimenSetupMethod.chaibu;
   int _manualBureau = 1;
   late QimenPan _pan;
 
@@ -34,7 +33,7 @@ class _QimenPageState extends State<QimenPage> {
       manualDunType: _manualDunType,
       useAutoDunType: _useAutoDunType,
       panMode: _panMode,
-      setupMethod: _setupMethod,
+      setupMethod: QimenSetupMethod.chaibu,
       manualBureau: _manualBureau,
       useAutoBureau: _useAutoBureau,
     );
@@ -61,7 +60,9 @@ class _QimenPageState extends State<QimenPage> {
         _selectedDateTime.minute,
       );
       _pan = _buildPan();
-      print('日期更新后盘: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}');
+      print(
+        '日期更新后盘: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}',
+      );
     });
   }
 
@@ -90,7 +91,9 @@ class _QimenPageState extends State<QimenPage> {
     print('重新排盘: $_selectedDateTime');
     setState(() {
       _pan = _buildPan();
-      print('新盘生成: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}');
+      print(
+        '新盘生成: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}',
+      );
     });
   }
 
@@ -99,27 +102,34 @@ class _QimenPageState extends State<QimenPage> {
     // 基本信息
     buffer.writeln('【奇门遁甲排盘】');
     buffer.writeln('时间：${QimenEngine.formatDateTime(_pan.generatedAt)}');
-    buffer.writeln('四柱：${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}');
+    buffer.writeln(
+      '四柱：${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}',
+    );
     buffer.writeln('${_pan.yuan} ${_pan.dunType.label}${_pan.bureau}局');
     buffer.writeln('旬首：${_pan.xunShou}${_pan.xunYi} 空亡：${_pan.kongWang}');
-    buffer.writeln('值符：${_pan.valueStar} 值使：${_pan.valueGate} 马星：${_pan.horseStar}');
+    buffer.writeln(
+      '值符：${_pan.valueStar} 值使：${_pan.valueGate} 马星：${_pan.horseStar}',
+    );
     buffer.writeln();
     // 九宫信息
     for (final cell in _pan.cells) {
       if (cell.isCenter) {
         buffer.writeln('中宫 天盘${cell.heavenStem}');
       } else {
-        final starText = cell.hasTianQinStar 
-            ? '${cell.tianQinStem}${cell.star}禽' 
+        final starText = cell.hasTianQinStar
+            ? '${cell.tianQinStem}${cell.star}禽'
             : cell.star;
-        final heavenText = cell.hasTianQinStar 
-            ? '${cell.tianQinStem}${cell.heavenStem}' 
+        final heavenText = cell.hasTianQinStar
+            ? '${cell.tianQinStem}${cell.heavenStem}'
             : cell.heavenStem;
         final earthText = cell.hasTianQinStem
             ? '${cell.tianQinStem}${cell.earthStem}'
             : cell.earthStem;
         final kongWangText = cell.isKongWang ? ' 空亡' : '';
-        buffer.writeln('${cell.palaceName} ${cell.deity} $starText ${cell.gate} 天盘$heavenText 地盘$earthText$kongWangText');
+        final horseText = cell.isHorseStar ? ' 马星' : '';
+        buffer.writeln(
+          '${cell.palaceName} ${cell.deity} $starText ${cell.gate} 天盘$heavenText 地盘$earthText$kongWangText$horseText',
+        );
       }
     }
     return buffer.toString();
@@ -301,33 +311,6 @@ class _QimenPageState extends State<QimenPage> {
                 )
                 .toList(growable: false),
           ),
-          const SizedBox(height: 16),
-          Text(
-            '起局方式',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF6A4522),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: QimenSetupMethod.values
-                .map(
-                  (item) => ChoiceChip(
-                    label: Text(item.label),
-                    selected: _setupMethod == item,
-                    onSelected: (_) {
-                      setState(() {
-                        _setupMethod = item;
-                        _pan = _buildPan();
-                      });
-                    },
-                  ),
-                )
-                .toList(growable: false),
-          ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: _recalculate,
@@ -363,7 +346,10 @@ class _QimenPageState extends State<QimenPage> {
               ),
               _SummaryBadge(title: '节气', value: _pan.solarTerm),
               _SummaryBadge(title: '三元', value: _pan.yuan),
-              _SummaryBadge(title: '局数', value: '${_pan.dunType.label}${_pan.bureau}局'),
+              _SummaryBadge(
+                title: '局数',
+                value: '${_pan.dunType.label}${_pan.bureau}局',
+              ),
               _SummaryBadge(title: '年柱', value: _pan.yearGanzhi),
               _SummaryBadge(title: '月柱', value: _pan.monthGanzhi),
               _SummaryBadge(title: '日柱', value: _pan.dayGanzhi),
@@ -422,10 +408,14 @@ class _QimenPageState extends State<QimenPage> {
       final children = <Widget>[];
       for (var column = 0; column < 3; column++) {
         final cell = _pan.cells[row * 3 + column];
-        children.add(_PanCellWidget(
-          key: ValueKey('cell_${cell.palaceNumber}_${_pan.generatedAt.millisecondsSinceEpoch}'),
-          cell: cell,
-        ));
+        children.add(
+          _PanCellWidget(
+            key: ValueKey(
+              'cell_${cell.palaceNumber}_${_pan.generatedAt.millisecondsSinceEpoch}',
+            ),
+            cell: cell,
+          ),
+        );
       }
       rows.add(TableRow(children: children));
     }
@@ -485,16 +475,18 @@ class _PanCellWidget extends StatelessWidget {
               ),
               if (cell.isKongWang) ...[
                 const SizedBox(width: 4),
-                Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFD4483B), width: 1.5),
-                  ),
-                  child: const Center(
-                    child: Text('空', style: TextStyle(fontSize: 8, color: Color(0xFFD4483B))),
-                  ),
+                const _MarkerBadge(
+                  text: '空',
+                  borderColor: Color(0xFFD4483B),
+                  textColor: Color(0xFFD4483B),
+                ),
+              ],
+              if (cell.isHorseStar) ...[
+                const SizedBox(width: 4),
+                const _MarkerBadge(
+                  text: '马',
+                  borderColor: Color(0xFF18A999),
+                  textColor: Color(0xFF18A999),
                 ),
               ],
             ],
@@ -521,7 +513,9 @@ class _PanCellWidget extends StatelessWidget {
               ),
             const SizedBox(height: 8),
             Text(
-              cell.hasTianQinStar ? '${cell.tianQinStem}${cell.star}禽' : cell.star,
+              cell.hasTianQinStar
+                  ? '${cell.tianQinStem}${cell.star}禽'
+                  : cell.star,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -539,15 +533,15 @@ class _PanCellWidget extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              cell.hasTianQinStar 
-                ? '天盘 ${cell.tianQinStem}${cell.heavenStem}'
-                : '天盘 ${cell.heavenStem}',
+              cell.hasTianQinStar
+                  ? '天盘 ${cell.tianQinStem}${cell.heavenStem}'
+                  : '天盘 ${cell.heavenStem}',
               style: const TextStyle(color: Color(0xFF5E412B)),
             ),
             Text(
               cell.hasTianQinStem
-                ? '地盘 ${cell.tianQinStem}${cell.earthStem}'
-                : '地盘 ${cell.earthStem}',
+                  ? '地盘 ${cell.tianQinStem}${cell.earthStem}'
+                  : '地盘 ${cell.earthStem}',
               style: const TextStyle(color: Color(0xFF5E412B)),
             ),
           ],
@@ -620,6 +614,33 @@ class _SummaryBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MarkerBadge extends StatelessWidget {
+  const _MarkerBadge({
+    required this.text,
+    required this.borderColor,
+    required this.textColor,
+  });
+
+  final String text;
+  final Color borderColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Center(
+        child: Text(text, style: TextStyle(fontSize: 8, color: textColor)),
       ),
     );
   }

@@ -123,38 +123,6 @@ class QimenEngine {
     9: '离九宫',
   };
 
-  static const List<String> _stems = [
-    '戊',
-    '己',
-    '庚',
-    '辛',
-    '壬',
-    '癸',
-    '丁',
-    '丙',
-    '乙',
-  ];
-  static const List<String> _stars = [
-    '天蓬',
-    '天任',
-    '天冲',
-    '天辅',
-    '天英',
-    '天芮',
-    '天柱',
-    '天心',
-    '天禽',
-  ];
-  static const List<String> _gates = [
-    '休门',
-    '生门',
-    '伤门',
-    '杜门',
-    '景门',
-    '死门',
-    '惊门',
-    '开门',
-  ];
   static const List<String> _yangDeities = [
     '值符',
     '腾蛇',
@@ -227,13 +195,17 @@ class QimenEngine {
   };
 
   // 六仪三奇排列顺序
-  static const List<String> _yiQiOrder = ['戊', '己', '庚', '辛', '壬', '癸', '丁', '丙', '乙'];
-
-  // 阳遁九宫顺序（从1开始按洛书顺序）
-  static const List<int> _yangPalaceOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-  // 阴遁九宫顺序（逆行）
-  static const List<int> _yinPalaceOrder = [1, 8, 7, 6, 5, 4, 3, 2, 9];
+  static const List<String> _yiQiOrder = [
+    '戊',
+    '己',
+    '庚',
+    '辛',
+    '壬',
+    '癸',
+    '丁',
+    '丙',
+    '乙',
+  ];
 
   // 节气用局表：每个节气的[上元, 中元, 下元]局数
   // 阳遁节气（冬至到芒种）
@@ -268,13 +240,6 @@ class QimenEngine {
     '大雪': [4, 7, 1],
   };
 
-  // 四仲（上元符头地支）- 子午卯酉
-  static const List<String> _siZhong = ['子', '午', '卯', '酉'];
-  // 四孟（中元符头地支）- 寅申巳亥
-  static const List<String> _siMeng = ['寅', '申', '巳', '亥'];
-  // 四季（下元符头地支）- 辰戌丑未
-  static const List<String> _siJi = ['辰', '戌', '丑', '未'];
-
   // 六甲旬空亡表：每旬空亡的两个地支
   static const Map<String, List<String>> _xunKongWang = {
     '甲子': ['戌', '亥'],
@@ -287,9 +252,18 @@ class QimenEngine {
 
   // 地支对应的宫位
   static const Map<String, int> _branchToPalace = {
-    '子': 1, '丑': 8, '寅': 8, '卯': 3,
-    '辰': 4, '巳': 4, '午': 9, '未': 2,
-    '申': 2, '酉': 7, '戌': 6, '亥': 6,
+    '子': 1,
+    '丑': 8,
+    '寅': 8,
+    '卯': 3,
+    '辰': 4,
+    '巳': 4,
+    '午': 9,
+    '未': 2,
+    '申': 2,
+    '酉': 7,
+    '戌': 6,
+    '亥': 6,
   };
 
   // 马星计算：根据时支三合局
@@ -314,26 +288,17 @@ class QimenEngine {
     final dunType = useAutoDunType
         ? autoDunType
         : (manualDunType ?? autoDunType);
-    
+
     // 先计算四柱
     final yearGanzhi = _resolveYearGanzhi(dateTime);
     final monthGanzhi = _resolveMonthGanzhi(dateTime, yearGanzhi);
     final dayGanzhi = _resolveDayGanzhi(dateTime);
     final hourGanzhi = _resolveHourGanzhi(dateTime, dayGanzhi);
-    
+
     // 三元基于日干支判定（用于确定局数）
     final yuanInfo = _resolveYuan(dayGanzhi);
     final autoBureau = _resolveBureau(solarTerm.name, yuanInfo.yuan, dunType);
     final bureau = useAutoBureau ? autoBureau : (manualBureau ?? autoBureau);
-    final ninePalaceOrder = panMode == QimenPanMode.zhuan
-        ? _zhuanNinePalaceOrder
-        : _feiNinePalaceOrder;
-    final ringPalaceOrder = panMode == QimenPanMode.zhuan
-        ? _zhuanRingPalaceOrder
-        : _feiRingPalaceOrder;
-    final setupShift = _setupMethodShift(setupMethod);
-    final panModeShift = panMode == QimenPanMode.fei ? 2 : 0;
-    final daySeed = dateTime.difference(DateTime(2024, 1, 1)).inDays;
     final hourIndex = ((dateTime.hour + 1) ~/ 2) % 12;
     final direction = dunType == QimenDunType.yang ? 1 : -1;
 
@@ -344,6 +309,7 @@ class QimenEngine {
     // 计算马星
     final hourBranch = hourGanzhi.substring(1);
     final horseStar = _horseStar[hourBranch] ?? '';
+    final horseStarPalace = _branchToPalace[horseStar] ?? 0;
 
     // 根据局数计算六仪在地盘的宫位（值符原始落宫）
     final yiPalace = _findYiPalace(xunYi, bureau, dunType);
@@ -355,19 +321,33 @@ class QimenEngine {
 
     // 计算时干在地盘的落宫（值符随时干转动）
     final hourStem = hourGanzhi.substring(0, 1);
-    final hourStemPalace = _findStemPalace(hourStem, earthByPalace);
+    final hourStemPalace = _findStemPalace(hourStem, earthByPalace, dunType);
 
     // 天盘：以时干落宫为基准转动
-    final heavenByPalace = _buildHeavenPlate(earthByPalace, yiPalace, hourStemPalace, dunType);
+    final heavenByPalace = _buildHeavenPlate(
+      earthByPalace,
+      yiPalace,
+      hourStemPalace,
+      dunType,
+    );
 
     // 九星：值符星转到时干落宫，其他星跟着转
     final starsByPalace = _buildStarsPlate(yiPalace, hourStemPalace, dunType);
 
     // 八门：值使门落宫后，从该宫顺时针排布八门
-    final gatesByPalace = _buildGatesPlate(yiPalace, hourStemPalace, dunType, hourStem);
+    final gatesByPalace = _buildGatesPlate(
+      yiPalace,
+      hourStemPalace,
+      dunType,
+      hourStem,
+    );
 
     // 八神：值符神转到时干落宫，其他神跟着转
-    final deitiesByPalace = _buildDeitiesPlate(yiPalace, hourStemPalace, dunType);
+    final deitiesByPalace = _buildDeitiesPlate(
+      yiPalace,
+      hourStemPalace,
+      dunType,
+    );
     final chiefDeity = _rotate(
       dunType == QimenDunType.yang ? _yangDeities : _yinDeities,
       direction *
@@ -378,7 +358,9 @@ class QimenEngine {
 
     // 计算空亡宫位（根据地支对应的宫位）
     final kongWangBranches = _xunKongWang[xunShou] ?? [];
-    final kongWangPalaces = kongWangBranches.map((branch) => _branchToPalace[branch] ?? 0).toSet();
+    final kongWangPalaces = kongWangBranches
+        .map((branch) => _branchToPalace[branch] ?? 0)
+        .toSet();
 
     // 找到天芮所在宫位（天禽随天芮走）
     int tianRuiPalace = 2; // 默认坤2宫
@@ -390,32 +372,31 @@ class QimenEngine {
     }
     // 中宫天盘干（天禽带的天干）
     final tianQinStem = heavenByPalace[5] ?? '';
-    // 天禽寄坤宫（固定寄坤2宫）
-    const tianQinJiPalace = 2;
+    // 天禽寄宫随阴阳遁变化：阳遁寄坤2，阴遁寄艮8
+    final tianQinJiPalace = _centerProxyPalace(dunType);
 
     final cells = displayOrder
-        .map(
-          (palace) {
-            // 天禽相关：天芮宫显示天禽星，坤2宫显示天禽天干
-            final hasTianQinStar = palace == tianRuiPalace && palace != 5;
-            final hasTianQinStem = palace == tianQinJiPalace && palace != 5;
-            return QimenPanCell(
-              palaceNumber: palace,
-              palaceName: _palaceNames[palace] ?? '$palace宫',
-              // 中宫没有神、星、门，只有天干地盘干
-              deity: palace == 5 ? '' : (deitiesByPalace[palace] ?? ''),
-              star: palace == 5 ? '' : (starsByPalace[palace] ?? ''),
-              gate: palace == 5 ? '' : (gatesByPalace[palace] ?? ''),
-              heavenStem: heavenByPalace[palace] ?? '',
-              earthStem: earthByPalace[palace] ?? '',
-              isCenter: palace == 5,
-              isKongWang: kongWangPalaces.contains(palace),
-              hasTianQinStar: hasTianQinStar,
-              hasTianQinStem: hasTianQinStem,
-              tianQinStem: tianQinStem,
-            );
-          },
-        )
+        .map((palace) {
+          // 天禽相关：天芮宫显示天禽星，坤2宫显示天禽天干
+          final hasTianQinStar = palace == tianRuiPalace && palace != 5;
+          final hasTianQinStem = palace == tianQinJiPalace && palace != 5;
+          return QimenPanCell(
+            palaceNumber: palace,
+            palaceName: _palaceNames[palace] ?? '$palace宫',
+            // 中宫没有神、星、门，只有天干地盘干
+            deity: palace == 5 ? '' : (deitiesByPalace[palace] ?? ''),
+            star: palace == 5 ? '' : (starsByPalace[palace] ?? ''),
+            gate: palace == 5 ? '' : (gatesByPalace[palace] ?? ''),
+            heavenStem: heavenByPalace[palace] ?? '',
+            earthStem: earthByPalace[palace] ?? '',
+            isCenter: palace == 5,
+            isKongWang: kongWangPalaces.contains(palace),
+            isHorseStar: palace == horseStarPalace,
+            hasTianQinStar: hasTianQinStar,
+            hasTianQinStem: hasTianQinStem,
+            tianQinStem: tianQinStem,
+          );
+        })
         .toList(growable: false);
 
     return QimenPan(
@@ -438,8 +419,7 @@ class QimenEngine {
       horseStar: horseStar,
       yuan: yuanInfo.yuan,
       kongWang: _getKongWang(xunShou),
-      note:
-          '${yuanInfo.yuan} ${dunType.label}${bureau}局，旬首$xunShou$xunYi',
+      note: '${yuanInfo.yuan} ${dunType.label}${bureau}局，旬首$xunShou$xunYi',
       cells: cells,
     );
   }
@@ -451,43 +431,6 @@ class QimenEngine {
     final h = dateTime.hour.toString().padLeft(2, '0');
     final min = dateTime.minute.toString().padLeft(2, '0');
     return '$y-$m-$d $h:$min';
-  }
-
-  static Map<int, String> _placeNine(
-    List<String> items,
-    List<int> palaceOrder,
-    int shift,
-  ) {
-    final rotated = _rotate(items, shift);
-    final result = <int, String>{};
-    for (var index = 0; index < palaceOrder.length; index++) {
-      result[palaceOrder[index]] = rotated[index];
-    }
-    return result;
-  }
-
-  static Map<int, String> _placeEight(
-    List<String> items,
-    List<int> palaceOrder,
-    int shift,
-  ) {
-    final rotated = _rotate(items, shift);
-    final result = <int, String>{};
-    for (var index = 0; index < palaceOrder.length; index++) {
-      result[palaceOrder[index]] = rotated[index];
-    }
-    return result;
-  }
-
-  static int _setupMethodShift(QimenSetupMethod setupMethod) {
-    switch (setupMethod) {
-      case QimenSetupMethod.chaibu:
-        return 0;
-      case QimenSetupMethod.angan:
-        return 2;
-      case QimenSetupMethod.zhishimen:
-        return 4;
-    }
   }
 
   static _SolarTermMoment _resolveSolarTerm(DateTime dateTime) {
@@ -635,7 +578,7 @@ class QimenEngine {
   /// 六十甲子分12组，每组5天，按上中下元循环
   static _YuanInfo _resolveYuan(String dayGanzhi) {
     final xunShou = _resolveXunShou(dayGanzhi);
-    
+
     // 计算日干支在六十甲子中的位置（0-59）
     final stem = dayGanzhi.substring(0, 1);
     final branch = dayGanzhi.substring(1);
@@ -643,7 +586,7 @@ class QimenEngine {
     final branchIndex = _dizhi.indexOf(branch);
     // 六十甲子位置公式：(天干索引 - 地支索引 + 60) % 10 * 6 + 地支索引
     final gzIndex = (stemIndex - branchIndex + 60) % 10 * 6 + branchIndex;
-    
+
     // 每5天一组，60天分12组，按上中下元循环
     // 组号 = gzIndex / 5
     // 0,3,6,9 组 → 上元
@@ -651,7 +594,7 @@ class QimenEngine {
     // 2,5,8,11 组 → 下元
     final groupIndex = gzIndex ~/ 5;
     final yuanIndex = groupIndex % 3;
-    
+
     String yuan;
     switch (yuanIndex) {
       case 0:
@@ -663,17 +606,21 @@ class QimenEngine {
       default:
         yuan = '下元';
     }
-    
+
     return _YuanInfo(yuan: yuan, fuTou: xunShou);
   }
 
   /// 根据节气、三元、遁法确定局数
-  static int _resolveBureau(String solarTerm, String yuan, QimenDunType dunType) {
+  static int _resolveBureau(
+    String solarTerm,
+    String yuan,
+    QimenDunType dunType,
+  ) {
     final juTable = dunType == QimenDunType.yang ? _yangJuTable : _yinJuTable;
     final juList = juTable[solarTerm];
-    
+
     if (juList == null) return 1;
-    
+
     switch (yuan) {
       case '上元':
         return juList[0];
@@ -714,18 +661,26 @@ class QimenEngine {
     return result;
   }
 
-  /// 查找天干在地盘的落宫（中宫寄坤2宫）
-  static int _findStemPalace(String stem, Map<int, String> earthPlate) {
+  /// 查找天干在地盘的落宫（中宫按阴阳遁寄宫）
+  static int _findStemPalace(
+    String stem,
+    Map<int, String> earthPlate,
+    QimenDunType dunType,
+  ) {
     for (final entry in earthPlate.entries) {
       if (entry.value == stem) {
-        // 中宫寄坤2宫
-        if (entry.key == 5) return 2;
+        if (entry.key == 5) return _centerProxyPalace(dunType);
         return entry.key;
       }
     }
     // 如果是甲，找到对应六仪的位置
     if (stem == '甲') return 1;
     return 1;
+  }
+
+  /// 中五宫参与八宫轮转时的寄宫：阳遁寄坤2，阴遁寄艮8。
+  static int _centerProxyPalace(QimenDunType dunType) {
+    return dunType == QimenDunType.yang ? 2 : 8;
   }
 
   /// 构建天盘：六仪随值符转到时干落宫
@@ -737,12 +692,16 @@ class QimenEngine {
   ) {
     final ringOrder = [1, 8, 3, 4, 9, 2, 7, 6]; // 八宫顺序
     final result = <int, String>{};
-    
+
     // 计算转动量：使用ringOrder索引
-    final yiPalaceIndex = ringOrder.indexOf(yiPalace);
-    final hourStemPalaceIndex = ringOrder.indexOf(hourStemPalace);
+    final yiPalaceIndex = ringOrder.indexOf(
+      _proxyRingPalace(yiPalace, dunType),
+    );
+    final hourStemPalaceIndex = ringOrder.indexOf(
+      _proxyRingPalace(hourStemPalace, dunType),
+    );
     final shift = (hourStemPalaceIndex - yiPalaceIndex + 8) % 8;
-    
+
     for (final palace in ringOrder) {
       final earthStem = earthPlate[palace] ?? '';
       // 计算这个天干应该转到哪个宫
@@ -757,21 +716,36 @@ class QimenEngine {
   }
 
   /// 构建九星盘：值符星转到时干落宫
-  static Map<int, String> _buildStarsPlate(int yiPalace, int hourStemPalace, QimenDunType dunType) {
+  static Map<int, String> _buildStarsPlate(
+    int yiPalace,
+    int hourStemPalace,
+    QimenDunType dunType,
+  ) {
     final ringOrder = [1, 8, 3, 4, 9, 2, 7, 6];
     final result = <int, String>{};
-    
+
     // 九星按宫位原始排列
     final starAtPalace = <int, String>{
-      1: '天蓬', 2: '天芮', 3: '天冲', 4: '天辅',
-      5: '天禽', 6: '天心', 7: '天柱', 8: '天任', 9: '天英',
+      1: '天蓬',
+      2: '天芮',
+      3: '天冲',
+      4: '天辅',
+      5: '天禽',
+      6: '天心',
+      7: '天柱',
+      8: '天任',
+      9: '天英',
     };
-    
+
     // 计算转动量
-    final yiPalaceIndex = ringOrder.indexOf(yiPalace);
-    final hourStemPalaceIndex = ringOrder.indexOf(hourStemPalace);
+    final yiPalaceIndex = ringOrder.indexOf(
+      _proxyRingPalace(yiPalace, dunType),
+    );
+    final hourStemPalaceIndex = ringOrder.indexOf(
+      _proxyRingPalace(hourStemPalace, dunType),
+    );
     final shift = (hourStemPalaceIndex - yiPalaceIndex + 8) % 8;
-    
+
     for (final palace in ringOrder) {
       final star = starAtPalace[palace] ?? '';
       final palaceIndex = ringOrder.indexOf(palace);
@@ -785,17 +759,22 @@ class QimenEngine {
   }
 
   /// 构建八门盘：值使门落宫在飛星序(9宫含中宫)中循环，从落宫开始顺时针排布八门
-  static Map<int, String> _buildGatesPlate(int yiPalace, int hourStemPalace, QimenDunType dunType, String hourStem) {
+  static Map<int, String> _buildGatesPlate(
+    int yiPalace,
+    int hourStemPalace,
+    QimenDunType dunType,
+    String hourStem,
+  ) {
     final ringOrder = [1, 8, 3, 4, 9, 2, 7, 6];
     final result = <int, String>{};
-    
+
     // 八门顺序（按轉盤序）
     final gateOrder = ['休门', '生门', '伤门', '杜门', '景门', '死门', '惊门', '开门'];
-    
+
     // 值使门：遁干原宫在轉盤序中的门
     int zhiShiGateIndex;
     int yiPalaceFeixingIndex; // 遁干宫在飛星序中的索引(0-8)
-    
+
     if (yiPalace == 5) {
       // 遁干在中宫，寄坤2，值使门=死门
       zhiShiGateIndex = 5; // 死门
@@ -804,20 +783,20 @@ class QimenEngine {
       zhiShiGateIndex = ringOrder.indexOf(yiPalace);
       yiPalaceFeixingIndex = yiPalace - 1; // 飛星序=[1,2,3,4,5,6,7,8,9]
     }
-    
+
     // 时干偏移（阳遁顺数，阴遁逆数）
     final tianganOrder = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
     final hourStemOffset = tianganOrder.indexOf(hourStem);
     final direction = dunType == QimenDunType.yang ? 1 : -1;
     final offset = hourStemOffset * direction;
-    
+
     // 值使门落宫：在飛星序(9宫含中宫)中循环
     final luoGongFeixingIndex = ((yiPalaceFeixingIndex + offset) % 9 + 9) % 9;
     var luoGongPalace = luoGongFeixingIndex + 1; // 飛星索引转宫号
-    
+
     // 中宫寄坤2
     if (luoGongPalace == 5) luoGongPalace = 2;
-    
+
     // 从值使门落宫开始，以值使门为起点，顺时针排布八门
     final luoGongRingIndex = ringOrder.indexOf(luoGongPalace);
     for (var i = 0; i < 8; i++) {
@@ -830,18 +809,26 @@ class QimenEngine {
   }
 
   /// 构建八神盘：值符神转到时干落宫
-  static Map<int, String> _buildDeitiesPlate(int yiPalace, int hourStemPalace, QimenDunType dunType) {
+  static Map<int, String> _buildDeitiesPlate(
+    int yiPalace,
+    int hourStemPalace,
+    QimenDunType dunType,
+  ) {
     final ringOrder = [1, 8, 3, 4, 9, 2, 7, 6];
     final result = <int, String>{};
-    
+
     // 八神按宫位排列（阳遁从值符宫开始顺排）
     final deities = dunType == QimenDunType.yang ? _yangDeities : _yinDeities;
-    
+
     // 计算转动量
-    final yiPalaceIndex = ringOrder.indexOf(yiPalace);
-    final hourStemPalaceIndex = ringOrder.indexOf(hourStemPalace);
+    final yiPalaceIndex = ringOrder.indexOf(
+      _proxyRingPalace(yiPalace, dunType),
+    );
+    final hourStemPalaceIndex = ringOrder.indexOf(
+      _proxyRingPalace(hourStemPalace, dunType),
+    );
     final shift = (hourStemPalaceIndex - yiPalaceIndex + 8) % 8;
-    
+
     // 值符神在值符原始落宫，其他神顺排
     for (var i = 0; i < 8; i++) {
       final palaceIndex = (yiPalaceIndex + i) % 8;
@@ -850,6 +837,10 @@ class QimenEngine {
       result[targetPalace] = deities[i];
     }
     return result;
+  }
+
+  static int _proxyRingPalace(int palace, QimenDunType dunType) {
+    return palace == 5 ? _centerProxyPalace(dunType) : palace;
   }
 
   /// 获取旬首对应的空亡
