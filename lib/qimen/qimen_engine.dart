@@ -105,10 +105,6 @@ class QimenEngine {
     12,
     12,
   ];
-  static const List<int> _zhuanNinePalaceOrder = [1, 8, 3, 4, 9, 2, 7, 6, 5];
-  static const List<int> _zhuanRingPalaceOrder = [1, 8, 3, 4, 9, 2, 7, 6];
-  static const List<int> _feiNinePalaceOrder = [1, 2, 3, 4, 9, 8, 7, 6, 5];
-  static const List<int> _feiRingPalaceOrder = [1, 2, 3, 4, 9, 8, 7, 6];
   static const List<int> displayOrder = [4, 9, 2, 3, 5, 7, 8, 1, 6];
 
   static const Map<int, String> _palaceNames = {

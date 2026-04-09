@@ -1,8 +1,12 @@
+import 'package:dart_iztro/dart_iztro.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'qimen/qimen_page.dart';
+import 'ziwei/ziwei_engine.dart';
 
 void main() {
+  ZiweiEngine.ensureInitialized();
   runApp(const QimenApp());
 }
 
@@ -16,9 +20,12 @@ class QimenApp extends StatelessWidget {
       brightness: Brightness.light,
     );
 
-    return MaterialApp(
-      title: 'qimen',
+    return GetMaterialApp(
+      title: '奇门紫薇',
       debugShowCheckedModeBanner: false,
+      translations: IztroTranslationService.withAppTranslations(),
+      locale: IztroTranslationService.currentLocale,
+      fallbackLocale: const Locale('zh', 'CN'),
       theme: ThemeData(
         colorScheme: colorScheme,
         scaffoldBackgroundColor: const Color(0xFFF6EEDB),

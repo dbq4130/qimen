@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  dart_iztro: ^2.4.3
+  get: ^4.7.3
+  lunar: ^1.7.8
 
 dev_dependencies:
   flutter_test:

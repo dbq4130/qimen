@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../ziwei/ziwei_page.dart';
 import 'qimen_engine.dart';
 import 'qimen_models.dart';
 
@@ -154,6 +155,15 @@ class _QimenPageState extends State<QimenPage> {
         backgroundColor: const Color(0xFF3C2A18),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ZiweiPage()),
+              );
+            },
+            icon: const Icon(Icons.auto_awesome, color: Color(0xFFE8C2FF)),
+            tooltip: '打开紫微斗数',
+          ),
           IconButton(
             onPressed: _copyToClipboard,
             icon: const Icon(Icons.copy),
