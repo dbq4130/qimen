@@ -3,6 +3,7 @@ import 'package:dart_iztro/dart_iztro.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../qizheng/qizheng_page.dart';
 import 'ziwei_engine.dart';
 import 'ziwei_models.dart';
 
@@ -190,6 +191,15 @@ class _ZiweiPageState extends State<ZiweiPage> {
         backgroundColor: const Color(0xFF4C306A),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const QizhengPage()),
+              );
+            },
+            tooltip: '打开七政四余',
+            icon: const Icon(Icons.public_rounded, color: Color(0xFFBEE7F4)),
+          ),
           IconButton(
             onPressed: _copyToClipboard,
             tooltip: '复制排盘信息',

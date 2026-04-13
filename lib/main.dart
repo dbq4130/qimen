@@ -21,7 +21,7 @@ class QimenApp extends StatelessWidget {
     );
 
     return GetMaterialApp(
-      title: '奇门紫薇',
+      title: '玄枢排盘',
       debugShowCheckedModeBanner: false,
       translations: IztroTranslationService.withAppTranslations(),
       locale: IztroTranslationService.currentLocale,

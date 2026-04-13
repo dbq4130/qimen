@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../qizheng/qizheng_page.dart';
 import '../ziwei/ziwei_page.dart';
 import 'qimen_engine.dart';
 import 'qimen_models.dart';
@@ -155,6 +156,15 @@ class _QimenPageState extends State<QimenPage> {
         backgroundColor: const Color(0xFF3C2A18),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const QizhengPage()),
+              );
+            },
+            icon: const Icon(Icons.public_rounded, color: Color(0xFFBEE7F4)),
+            tooltip: '打开七政四余',
+          ),
           IconButton(
             onPressed: () {
               Navigator.of(context).push(

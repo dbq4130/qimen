@@ -1,11 +1,11 @@
 {
-    "name": "qimen",
-    "short_name": "qimen",
+    "name": "玄枢排盘",
+    "short_name": "玄枢",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "奇门、紫微、七政四余一体的术数排盘应用。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
