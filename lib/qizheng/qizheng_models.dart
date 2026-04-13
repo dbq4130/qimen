@@ -387,6 +387,54 @@ class QizhengXiuInfo {
   String get fullName => '$name$ruling$animal';
 }
 
+class QizhengLodgingResult {
+  const QizhengLodgingResult({
+    required this.mansion,
+    required this.host,
+    required this.animal,
+    required this.degreeValue,
+    required this.degree,
+    required this.fraction,
+    required this.finenessElement,
+  });
+
+  final String mansion;
+  final String host;
+  final String animal;
+  final double degreeValue;
+  final int degree;
+  final int fraction;
+  final String finenessElement;
+
+  String get fullName => '$mansion$host$animal';
+
+  String get degreeText {
+    final fractionText = fraction.toString().padLeft(2, '0');
+    if (degree <= 0) {
+      return '初度$fractionText分';
+    }
+    return '$degree度$fractionText分';
+  }
+
+  String get conciseText => '$fullName $degreeText';
+
+  String get finenessText => '$finenessElement分金';
+}
+
+class QizhengLodgingSegment {
+  const QizhengLodgingSegment({
+    required this.mansion,
+    required this.fullName,
+    required this.startLongitude,
+    required this.endLongitude,
+  });
+
+  final String mansion;
+  final String fullName;
+  final double startLongitude;
+  final double endLongitude;
+}
+
 class QizhengHouse {
   const QizhengHouse({required this.index, required this.cuspLongitude});
 

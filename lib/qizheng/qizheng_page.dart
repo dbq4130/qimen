@@ -103,9 +103,7 @@ class _QizhengPageState extends State<QizhengPage> {
     if (selected == null) {
       return;
     }
-    _updateInput(
-      QizhengEngine.inputFromPreset(selected, _input.localDateTime),
-    );
+    _updateInput(QizhengEngine.inputFromPreset(selected, _input.localDateTime));
   }
 
   Future<void> _editLocation() async {
@@ -377,7 +375,7 @@ class _QizhengPageState extends State<QizhengPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '时区 ${QizhengEngine.formatUtcOffsetMinutes(_input.utcOffsetMinutes)}，当前页面先按圆盘校准盘呈现，重点保留命度、身度、宿度与十一曜躔次。',
+                  '时区 ${QizhengEngine.formatUtcOffsetMinutes(_input.utcOffsetMinutes)}，当前页面先按圆盘校准盘呈现，重点保留二十八宿落度、宿度分金与十一曜躔次。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xFF355E69),
                     height: 1.45,
@@ -414,7 +412,7 @@ class _QizhengPageState extends State<QizhengPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            '当前页仅显示圆盘总览；可从右上角进入参数面板调整时间、地点和时区。',
+            '外圈显示二十八宿落度，中圈保留十二支分野，内圈改按命宫逆布十二人事宫；可从右上角进入参数面板调整时间、地点和时区。',
             style: theme.textTheme.bodySmall?.copyWith(
               color: const Color(0xFF5D6C70),
               height: 1.45,
@@ -439,16 +437,17 @@ class _QizhengPageState extends State<QizhengPage> {
             spacing: 8,
             runSpacing: 8,
             children: legendItems
-                .map(
-                  (position) => _MinorTag(
+                .map((position) {
+                  final lodging = QizhengEngine.lodgingOf(position);
+                  return _MinorTag(
                     label:
-                        '${position.body.shortLabel} ${QizhengEngine.branchTextOf(position)} ${QizhengEngine.palaceName(position.houseIndex)}',
-                    backgroundColor: _bodyColor(position.body).withValues(
-                      alpha: 0.16,
-                    ),
+                        '${position.body.shortLabel} ${lodging.mansion}${lodging.degreeText} ${lodging.finenessText}',
+                    backgroundColor: _bodyColor(
+                      position.body,
+                    ).withValues(alpha: 0.16),
                     foregroundColor: _bodyColor(position.body),
-                  ),
-                )
+                  );
+                })
                 .toList(growable: false),
           ),
         ],
@@ -609,15 +608,23 @@ class _QizhengWheelPainter extends CustomPainter {
     Color(0xFFD5E0D7),
     Color(0xFFCEE5E8),
   ];
+  static const List<Color> _xiuColors = [
+    Color(0xFFF0DCC0),
+    Color(0xFFE8E0BF),
+    Color(0xFFDCE6C3),
+    Color(0xFFD6E5DC),
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final outerRadius = size.shortestSide / 2 - 12;
-    final signInnerRadius = outerRadius * 0.76;
+    final xiuInnerRadius = outerRadius * 0.86;
+    final signInnerRadius = outerRadius * 0.72;
     final houseInnerRadius = outerRadius * 0.38;
-    final markerRadius = outerRadius * 0.61;
+    final markerRadius = outerRadius * 0.58;
     final ascLongitude = chart.ascendantLongitude;
+    final lodgingSegments = QizhengEngine.lodgingSegments();
 
     final fillPaint = Paint()..style = PaintingStyle.fill;
     final strokePaint = Paint()
@@ -626,20 +633,47 @@ class _QizhengWheelPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     final outerRingRect = Rect.fromCircle(center: center, radius: outerRadius);
+    final xiuInnerRect = Rect.fromCircle(
+      center: center,
+      radius: xiuInnerRadius,
+    );
     final signInnerRect = Rect.fromCircle(
       center: center,
       radius: signInnerRadius,
     );
 
-    for (var index = 0; index < 12; index++) {
-      final startAngle = _toCanvasRadians(index * 30.0, ascLongitude);
-      final sweep = -math.pi / 6;
+    for (var index = 0; index < lodgingSegments.length; index++) {
+      final segment = lodgingSegments[index];
+      final span =
+          ((segment.endLongitude - segment.startLongitude) % 360 + 360) % 360;
+      final startAngle = _toCanvasRadians(segment.startLongitude, ascLongitude);
+      final sweep = -(span == 0 ? 360 : span) * math.pi / 180;
       final path = Path()
         ..moveTo(
           center.dx + outerRadius * math.cos(startAngle),
           center.dy + outerRadius * math.sin(startAngle),
         )
         ..arcTo(outerRingRect, startAngle, sweep, false)
+        ..arcTo(xiuInnerRect, startAngle + sweep, -sweep, false)
+        ..close();
+      fillPaint.color = _xiuColors[index % _xiuColors.length];
+      canvas.drawPath(path, fillPaint);
+    }
+
+    for (var index = 0; index < 12; index++) {
+      final startAngle = _toCanvasRadians(index * 30.0, ascLongitude);
+      final sweep = -math.pi / 6;
+      final path = Path()
+        ..moveTo(
+          center.dx + xiuInnerRadius * math.cos(startAngle),
+          center.dy + xiuInnerRadius * math.sin(startAngle),
+        )
+        ..arcTo(
+          Rect.fromCircle(center: center, radius: xiuInnerRadius),
+          startAngle,
+          sweep,
+          false,
+        )
         ..arcTo(signInnerRect, startAngle + sweep, -sweep, false)
         ..close();
       fillPaint.color = _signColors[index];
@@ -654,6 +688,7 @@ class _QizhengWheelPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
+    canvas.drawCircle(center, xiuInnerRadius, strokePaint);
     canvas.drawCircle(center, signInnerRadius, strokePaint);
     canvas.drawCircle(
       center,
@@ -679,8 +714,9 @@ class _QizhengWheelPainter extends CustomPainter {
         ..strokeWidth = 1,
     );
 
-    for (final house in chart.houses) {
-      final angle = _toCanvasRadians(house.cuspLongitude, ascLongitude);
+    for (var index = 0; index < 12; index++) {
+      final longitude = index * 30.0;
+      final angle = _toCanvasRadians(longitude, ascLongitude);
       final start = Offset(
         center.dx + houseInnerRadius * math.cos(angle),
         center.dy + houseInnerRadius * math.sin(angle),
@@ -697,16 +733,40 @@ class _QizhengWheelPainter extends CustomPainter {
           ..strokeWidth = 1,
       );
 
-      final midAngle = _toCanvasRadians(house.cuspLongitude + 15, ascLongitude);
+      final midAngle = _toCanvasRadians(longitude + 15, ascLongitude);
       _paintText(
         canvas,
         center,
-        text: QizhengEngine.palaceShortName(house.index),
+        text: QizhengEngine.traditionalPalaceShortNameAtBranchIndex(
+          chart,
+          index,
+        ),
         radius: (houseInnerRadius + signInnerRadius) / 2,
         angle: midAngle,
         style: const TextStyle(
           color: Color(0xFF3E4D52),
           fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+
+    for (final segment in lodgingSegments) {
+      final span =
+          ((segment.endLongitude - segment.startLongitude) % 360 + 360) % 360;
+      final midLongitude = _normalizeAngle(
+        segment.startLongitude + (span == 0 ? 180 : span / 2),
+      );
+      final angle = _toCanvasRadians(midLongitude, ascLongitude);
+      _paintText(
+        canvas,
+        center,
+        text: segment.mansion,
+        radius: (xiuInnerRadius + outerRadius) / 2,
+        angle: angle,
+        style: const TextStyle(
+          color: Color(0xFF3F453F),
+          fontSize: 9,
           fontWeight: FontWeight.w700,
         ),
       );
@@ -719,11 +779,11 @@ class _QizhengWheelPainter extends CustomPainter {
         canvas,
         center,
         text: QizhengEngine.branchNameOfLongitude(midLongitude.toDouble()),
-        radius: (signInnerRadius + outerRadius) / 2,
+        radius: (signInnerRadius + xiuInnerRadius) / 2,
         angle: angle,
         style: const TextStyle(
           color: Color(0xFF28424A),
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
       );
@@ -733,7 +793,7 @@ class _QizhengWheelPainter extends CustomPainter {
       canvas,
       center: center,
       radius: outerRadius,
-      longitude: chart.ascendantLongitude,
+      longitude: QizhengEngine.fateDegreeLongitude(chart),
       ascendantLongitude: ascLongitude,
       label: '命',
       color: const Color(0xFF0E566A),
@@ -796,16 +856,17 @@ class _QizhengWheelPainter extends CustomPainter {
     double ascLongitude,
     double baseRadius,
   ) {
-    final sorted = positions
-        .map(
-          (position) => _WheelBodyMarker(
-            position: position,
-            angle: _toCanvasRadians(position.longitude, ascLongitude),
-            radius: baseRadius,
-          ),
-        )
-        .toList()
-      ..sort((left, right) => left.angle.compareTo(right.angle));
+    final sorted =
+        positions
+            .map(
+              (position) => _WheelBodyMarker(
+                position: position,
+                angle: _toCanvasRadians(position.longitude, ascLongitude),
+                radius: baseRadius,
+              ),
+            )
+            .toList()
+          ..sort((left, right) => left.angle.compareTo(right.angle));
 
     var clusterIndex = 0;
     double? lastAngle;
@@ -855,11 +916,7 @@ class _QizhengWheelPainter extends CustomPainter {
       text: label,
       radius: radius + 18,
       angle: angle,
-      style: TextStyle(
-        color: color,
-        fontSize: 12,
-        fontWeight: FontWeight.w800,
-      ),
+      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
     );
   }
 
@@ -900,6 +957,11 @@ class _QizhengWheelPainter extends CustomPainter {
     final normalized = delta < 0 ? delta + 360 : delta;
     final screenDegrees = 180 - normalized;
     return screenDegrees * math.pi / 180;
+  }
+
+  double _normalizeAngle(double degrees) {
+    final normalized = degrees % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
   }
 
   Color _bodyColor(QizhengBody body) {

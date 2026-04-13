@@ -17,9 +17,7 @@ void main() {
       },
     );
 
-    await tester.pumpWidget(
-      const MaterialApp(home: QizhengPage()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: QizhengPage()));
 
     await tester.pumpAndSettle();
 
@@ -28,9 +26,9 @@ void main() {
 
     expect(find.text('七政四余'), findsOneWidget);
     expect(find.text('圆盘总览'), findsOneWidget);
+    expect(find.textContaining('二十八宿落度'), findsOneWidget);
     expect(find.text('排盘参数'), findsNothing);
     expect(find.text('校准摘要'), findsNothing);
-    expect(find.text('二十八宿'), findsNothing);
     expect(find.text('校准要点'), findsNothing);
     expect(find.text('黄道分布'), findsNothing);
     expect(find.text('十二命宫'), findsNothing);
@@ -53,10 +51,16 @@ void main() {
     expect(find.text('七政四余校准盘信息已复制'), findsOneWidget);
     expect(copiedText, isNotNull);
     expect(copiedText, contains('【七政四余校准盘】'));
+    expect(copiedText, contains('命宫：'));
     expect(copiedText, contains('命度：'));
     expect(copiedText, contains('身度：'));
     expect(copiedText, contains('宿度：'));
+    expect(copiedText, contains('宫主：'));
+    expect(copiedText, contains('度主：'));
+    expect(copiedText, contains('身度主：'));
+    expect(copiedText, contains('宫度主论：'));
     expect(copiedText, contains('值日宿：'));
+    expect(copiedText, contains('分金'));
     expect(copiedText, isNot(contains('角点：ASC')));
     expect(copiedText, isNot(contains('主要相位：')));
 
