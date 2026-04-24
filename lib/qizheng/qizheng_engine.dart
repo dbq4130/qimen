@@ -285,6 +285,20 @@ class QizhengEngine {
     '福德',
   };
   static const Set<String> _weakPalaceNames = {'兄弟', '奴仆', '疾厄', '迁移', '相貌'};
+  static const List<QizhengLimitStep> _limitSteps = [
+    QizhengLimitStep(palaceName: '命宫', years: 15, isDayGroup: true),
+    QizhengLimitStep(palaceName: '官禄', years: 15, isDayGroup: true),
+    QizhengLimitStep(palaceName: '福德', years: 11, isDayGroup: true),
+    QizhengLimitStep(palaceName: '相貌', years: 10, isDayGroup: true),
+    QizhengLimitStep(palaceName: '迁移', years: 8, isDayGroup: true),
+    QizhengLimitStep(palaceName: '疾厄', years: 7, isDayGroup: true),
+    QizhengLimitStep(palaceName: '夫妻', years: 11, isDayGroup: false),
+    QizhengLimitStep(palaceName: '奴仆', years: 4.5, isDayGroup: false),
+    QizhengLimitStep(palaceName: '男女', years: 4.5, isDayGroup: false),
+    QizhengLimitStep(palaceName: '田宅', years: 4.5, isDayGroup: false),
+    QizhengLimitStep(palaceName: '兄弟', years: 5, isDayGroup: false),
+    QizhengLimitStep(palaceName: '财帛', years: 5, isDayGroup: false),
+  ];
   static const Map<String, QizhengBody> _stemTransformBodies = {
     '甲': QizhengBody.mars,
     '乙': QizhengBody.yueBei,
@@ -684,6 +698,37 @@ class QizhengEngine {
     return commentary;
   }
 
+  static List<QizhengLimitStep> limitSteps() {
+    return List<QizhengLimitStep>.from(_limitSteps, growable: false);
+  }
+
+  static double dayLimitTotalYears() {
+    return _limitSteps
+        .where((step) => step.isDayGroup)
+        .fold(0.0, (sum, step) => sum + step.years);
+  }
+
+  static double nightLimitTotalYears() {
+    return _limitSteps
+        .where((step) => !step.isDayGroup)
+        .fold(0.0, (sum, step) => sum + step.years);
+  }
+
+  static String initialLimitText(QizhengChart chart) {
+    return '初限命宫 ${_formatLimitYears(15)}，先看宫主${palaceMasterText(chart)}与命度主${degreeMasterText(chart)}。';
+  }
+
+  static List<String> limitStepCommentary(QizhengChart chart) {
+    final daySteps = _limitSteps.where((step) => step.isDayGroup).toList();
+    final nightSteps = _limitSteps.where((step) => !step.isDayGroup).toList();
+    return [
+      initialLimitText(chart),
+      '昼限六宫：${daySteps.map((step) => '${step.palaceName}${_formatLimitYears(step.years)}').join('、')}，共${_formatLimitYears(dayLimitTotalYears())}。',
+      '夜限六宫：${nightSteps.map((step) => '${step.palaceName}${_formatLimitYears(step.years)}').join('、')}，共${_formatLimitYears(nightLimitTotalYears())}。',
+      '限主取法：先看限宫主与限度主。吉星顺行为福紧，凶星顺行为灾慢；本宫应十分，对照七分，三合四分。',
+    ];
+  }
+
   static String xiuSummaryText(QizhengChart chart) {
     final xiu = chart.xiuInfo;
     return '${_quadrantText(xiu.quadrant)}${xiu.guardian} · ${xiu.fullName} · ${xiu.luck}';
@@ -1020,6 +1065,11 @@ class QizhengEngine {
     buffer.writeln('值日宿：${xiuSummaryText(chart)}');
     buffer.writeln('恒星时：${formatLocalSiderealTime(chart.localSiderealTime)}');
     buffer.writeln();
+    buffer.writeln('洞微限步：');
+    for (final line in limitStepCommentary(chart)) {
+      buffer.writeln('- $line');
+    }
+    buffer.writeln();
     buffer.writeln('宫度主论：');
     for (final line in palaceDegreeCommentary(chart)) {
       buffer.writeln('- $line');
@@ -1036,7 +1086,7 @@ class QizhengEngine {
     buffer.writeln('值宿宿辞：${chart.xiuInfo.verse}');
     buffer.writeln();
     buffer.writeln(
-      '说明：当前版本先收口为圆盘校准盘，展示命宫、身宫、命度、身度、宿度、宫主、度主、身度主、宫度主论与十一曜躔次；二十八宿落度、宿度分金与安命度法已接入，后续可继续补古法推限。',
+      '说明：当前版本先收口为圆盘校准盘，展示命宫、身宫、命度、身度、宿度、宫主、度主、身度主、洞微限步、宫度主论与十一曜躔次；二十八宿落度、宿度分金与安命度法已接入，后续可继续补逐年推限。',
     );
     return buffer.toString();
   }
@@ -1282,6 +1332,13 @@ class QizhengEngine {
         (left == '水' && right == '火') ||
         (left == '火' && right == '金') ||
         (left == '金' && right == '木');
+  }
+
+  static String _formatLimitYears(double years) {
+    if ((years - years.round()).abs() < 0.001) {
+      return '${years.round()}年';
+    }
+    return '${years.toStringAsFixed(1)}年';
   }
 
   static int _traditionalPalaceOffset(QizhengChart chart, int branchIndex) {

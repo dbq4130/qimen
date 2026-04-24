@@ -128,6 +128,12 @@ void main() {
     expect(QizhengEngine.bodyDegreeMasterText(chart), equals('土星'));
     expect(QizhengEngine.dayNightText(chart), equals('昼生'));
     expect(QizhengEngine.masterFocusText(chart), equals('昼生重命度主木星'));
+    expect(QizhengEngine.dayLimitTotalYears(), equals(66));
+    expect(QizhengEngine.nightLimitTotalYears(), equals(34.5));
+    expect(
+      QizhengEngine.initialLimitText(chart),
+      equals('初限命宫 15年，先看宫主金星与命度主木星。'),
+    );
     expect(
       QizhengEngine.palaceDegreeCommentary(chart).first,
       equals('宫主金星居兄弟弱宫，度主木星居夫妻强宫。'),
@@ -145,6 +151,11 @@ void main() {
     expect(text, contains('度主：木星'));
     expect(text, contains('身度主：土星'));
     expect(text, contains('主看：昼生重命度主木星'));
+    expect(text, contains('洞微限步：'));
+    expect(text, contains('初限命宫 15年，先看宫主金星与命度主木星。'));
+    expect(text, contains('昼限六宫：命宫15年、官禄15年、福德11年、相貌10年、迁移8年、疾厄7年，共66年。'));
+    expect(text, contains('夜限六宫：夫妻11年、奴仆4.5年、男女4.5年、田宅4.5年、兄弟5年、财帛5年，共34.5年。'));
+    expect(text, contains('限主取法：先看限宫主与限度主。吉星顺行为福紧，凶星顺行为灾慢；本宫应十分，对照七分，三合四分。'));
     expect(text, contains('宫度主论：'));
     expect(text, contains('宫主金星居兄弟弱宫，度主木星居夫妻强宫。'));
     expect(text, contains('宫主与度主五行金克木；依宫度主论，这类情形宜先守度主，主看木星。'));
@@ -209,6 +220,7 @@ void main() {
     expect(QizhengEngine.fateDegreeText(chart), equals('角木蛟 2度09分'));
     expect(QizhengEngine.palaceMasterText(chart), equals('金星'));
     expect(QizhengEngine.degreeMasterText(chart), equals('木星'));
+    expect(QizhengEngine.limitSteps(), hasLength(12));
     expect(
       QizhengEngine.palaceDegreeCommentary(chart),
       contains('身度主土星居疾厄弱宫，可与身宫财帛 卯宫互参。'),

@@ -58,6 +58,7 @@ void main() {
     expect(copiedText, contains('宫主：'));
     expect(copiedText, contains('度主：'));
     expect(copiedText, contains('身度主：'));
+    expect(copiedText, contains('洞微限步：'));
     expect(copiedText, contains('宫度主论：'));
     expect(copiedText, contains('值日宿：'));
     expect(copiedText, contains('分金'));

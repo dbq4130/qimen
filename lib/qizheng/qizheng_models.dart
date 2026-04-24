@@ -435,6 +435,18 @@ class QizhengLodgingSegment {
   final double endLongitude;
 }
 
+class QizhengLimitStep {
+  const QizhengLimitStep({
+    required this.palaceName,
+    required this.years,
+    required this.isDayGroup,
+  });
+
+  final String palaceName;
+  final double years;
+  final bool isDayGroup;
+}
+
 class QizhengHouse {
   const QizhengHouse({required this.index, required this.cuspLongitude});
 
@@ -525,7 +537,9 @@ class QizhengChart {
 
   List<QizhengPosition> positionsInSign(QizhengZodiacSign sign) {
     final items = positions.where((item) => item.sign == sign).toList();
-    items.sort((left, right) => left.degreeInSign.compareTo(right.degreeInSign));
+    items.sort(
+      (left, right) => left.degreeInSign.compareTo(right.degreeInSign),
+    );
     return items;
   }
 
@@ -535,15 +549,11 @@ class QizhengChart {
         return positions;
       case QizhengDetailFilter.sevenGovernors:
         return positions
-            .where(
-              (item) => item.body.group == QizhengBodyGroup.sevenGovernors,
-            )
+            .where((item) => item.body.group == QizhengBodyGroup.sevenGovernors)
             .toList(growable: false);
       case QizhengDetailFilter.fourRemainders:
         return positions
-            .where(
-              (item) => item.body.group == QizhengBodyGroup.fourRemainders,
-            )
+            .where((item) => item.body.group == QizhengBodyGroup.fourRemainders)
             .toList(growable: false);
     }
   }
