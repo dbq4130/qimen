@@ -14,6 +14,10 @@ class QimenPage extends StatefulWidget {
 }
 
 class _QimenPageState extends State<QimenPage> {
+  static const int _minSupportedYear = 1980;
+  static const int _maxSupportedYear = 2100;
+  static const double _optionTileExtent = 56;
+
   DateTime _selectedDateTime = DateTime.now();
   bool _useAutoDunType = true;
   bool _useAutoBureau = true;
@@ -41,31 +45,96 @@ class _QimenPageState extends State<QimenPage> {
     );
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDateTime,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+  int _daysInMonth(int year, int month) {
+    return DateTime(year, month + 1, 0).day;
+  }
+
+  DateTime _normalizedDateTime({
+    int? year,
+    int? month,
+    int? day,
+    int? hour,
+    int? minute,
+  }) {
+    final nextYear = year ?? _selectedDateTime.year;
+    final nextMonth = month ?? _selectedDateTime.month;
+    final maxDay = _daysInMonth(nextYear, nextMonth);
+    final requestedDay = day ?? _selectedDateTime.day;
+    final nextDay = requestedDay > maxDay ? maxDay : requestedDay;
+
+    return DateTime(
+      nextYear,
+      nextMonth,
+      nextDay,
+      hour ?? _selectedDateTime.hour,
+      minute ?? _selectedDateTime.minute,
     );
-    if (picked == null) {
+  }
+
+  void _updateSelectedDateTime(
+    DateTime nextDateTime, {
+    required String reason,
+  }) {
+    print('$reason更新: $nextDateTime');
+    setState(() {
+      _selectedDateTime = nextDateTime;
+      _pan = _buildPan();
+      print(
+        '$reason更新后盘: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}',
+      );
+    });
+  }
+
+  Future<void> _pickYear() async {
+    final values = List<int>.generate(
+      _maxSupportedYear - _minSupportedYear + 1,
+      (index) => _minSupportedYear + index,
+    );
+    final selected = await _showOptionSheet<int>(
+      title: '选择年份',
+      values: values,
+      currentValue: _selectedDateTime.year,
+      labelBuilder: (value) => '$value年',
+    );
+    if (selected == null) {
       return;
     }
 
-    print('选择日期: ${picked.year}-${picked.month}-${picked.day}');
-    setState(() {
-      _selectedDateTime = DateTime(
-        picked.year,
-        picked.month,
-        picked.day,
-        _selectedDateTime.hour,
-        _selectedDateTime.minute,
-      );
-      _pan = _buildPan();
-      print(
-        '日期更新后盘: ${_pan.generatedAt}, 四柱: ${_pan.yearGanzhi} ${_pan.monthGanzhi} ${_pan.dayGanzhi} ${_pan.hourGanzhi}',
-      );
-    });
+    _updateSelectedDateTime(_normalizedDateTime(year: selected), reason: '年份');
+  }
+
+  Future<void> _pickMonth() async {
+    final values = List<int>.generate(12, (index) => index + 1);
+    final selected = await _showOptionSheet<int>(
+      title: '选择月份',
+      values: values,
+      currentValue: _selectedDateTime.month,
+      labelBuilder: (value) => '$value月',
+    );
+    if (selected == null) {
+      return;
+    }
+
+    _updateSelectedDateTime(_normalizedDateTime(month: selected), reason: '月份');
+  }
+
+  Future<void> _pickDay() async {
+    final dayCount = _daysInMonth(
+      _selectedDateTime.year,
+      _selectedDateTime.month,
+    );
+    final values = List<int>.generate(dayCount, (index) => index + 1);
+    final selected = await _showOptionSheet<int>(
+      title: '选择日期',
+      values: values,
+      currentValue: _selectedDateTime.day,
+      labelBuilder: (value) => '$value日',
+    );
+    if (selected == null) {
+      return;
+    }
+
+    _updateSelectedDateTime(_normalizedDateTime(day: selected), reason: '日期');
   }
 
   Future<void> _pickTime() async {
@@ -77,16 +146,36 @@ class _QimenPageState extends State<QimenPage> {
       return;
     }
 
-    setState(() {
-      _selectedDateTime = DateTime(
-        _selectedDateTime.year,
-        _selectedDateTime.month,
-        _selectedDateTime.day,
-        picked.hour,
-        picked.minute,
-      );
-      _pan = _buildPan();
-    });
+    _updateSelectedDateTime(
+      _normalizedDateTime(hour: picked.hour, minute: picked.minute),
+      reason: '时间',
+    );
+  }
+
+  Future<T?> _showOptionSheet<T>({
+    required String title,
+    required List<T> values,
+    required T currentValue,
+    required String Function(T value) labelBuilder,
+    T? initialVisibleValue,
+  }) {
+    return showModalBottomSheet<T>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final anchorValue = initialVisibleValue ?? currentValue;
+        final initialIndex = values.indexOf(anchorValue);
+        return SafeArea(
+          child: _OptionSheet<T>(
+            title: title,
+            values: values,
+            currentValue: currentValue,
+            initialIndex: initialIndex,
+            labelBuilder: labelBuilder,
+          ),
+        );
+      },
+    );
   }
 
   void _recalculate() {
@@ -230,12 +319,26 @@ class _QimenPageState extends State<QimenPage> {
             runSpacing: 12,
             children: [
               _ActionChipButton(
-                label:
-                    '日期 ${QimenEngine.formatDateTime(_selectedDateTime).split(' ').first}',
-                onTap: _pickDate,
-                icon: Icons.calendar_today_outlined,
+                key: const ValueKey('qimen_year_button'),
+                label: '年 ${_selectedDateTime.year}',
+                onTap: _pickYear,
+                icon: Icons.calendar_month_outlined,
               ),
               _ActionChipButton(
+                key: const ValueKey('qimen_month_button'),
+                label:
+                    '月 ${_selectedDateTime.month.toString().padLeft(2, '0')}',
+                onTap: _pickMonth,
+                icon: Icons.calendar_view_month_outlined,
+              ),
+              _ActionChipButton(
+                key: const ValueKey('qimen_day_button'),
+                label: '日 ${_selectedDateTime.day.toString().padLeft(2, '0')}',
+                onTap: _pickDay,
+                icon: Icons.event_outlined,
+              ),
+              _ActionChipButton(
+                key: const ValueKey('qimen_time_button'),
                 label:
                     '时间 ${QimenEngine.formatDateTime(_selectedDateTime).split(' ').last}',
                 onTap: _pickTime,
@@ -668,6 +771,7 @@ class _MarkerBadge extends StatelessWidget {
 
 class _ActionChipButton extends StatelessWidget {
   const _ActionChipButton({
+    super.key,
     required this.label,
     required this.onTap,
     required this.icon,
@@ -683,6 +787,81 @@ class _ActionChipButton extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(icon),
       label: Text(label),
+    );
+  }
+}
+
+class _OptionSheet<T> extends StatefulWidget {
+  const _OptionSheet({
+    required this.title,
+    required this.values,
+    required this.currentValue,
+    required this.initialIndex,
+    required this.labelBuilder,
+  });
+
+  final String title;
+  final List<T> values;
+  final T currentValue;
+  final int initialIndex;
+  final String Function(T value) labelBuilder;
+
+  @override
+  State<_OptionSheet<T>> createState() => _OptionSheetState<T>();
+}
+
+class _OptionSheetState<T> extends State<_OptionSheet<T>> {
+  late final ScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final safeIndex = widget.initialIndex < 0 ? 0 : widget.initialIndex;
+    _controller = ScrollController(
+      initialScrollOffset: safeIndex * _QimenPageState._optionTileExtent,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+          child: Text(
+            widget.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF51351C),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: _controller,
+            itemExtent: _QimenPageState._optionTileExtent,
+            itemCount: widget.values.length,
+            itemBuilder: (context, index) {
+              final value = widget.values[index];
+              final selected = value == widget.currentValue;
+              return ListTile(
+                title: Text(widget.labelBuilder(value)),
+                trailing: selected
+                    ? const Icon(Icons.check_circle, color: Color(0xFF8A5A2B))
+                    : null,
+                onTap: () => Navigator.of(context).pop(value),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
