@@ -180,6 +180,8 @@ class ZeriDay {
     required this.yi,
     required this.ji,
     required this.unusableReason,
+    required this.hourTabooReason,
+    required this.keptMonthReason,
   });
 
   final int lunarDay;
@@ -204,6 +206,8 @@ class ZeriDay {
   final List<String> yi;
   final List<String> ji;
   final String? unusableReason;
+  final String? hourTabooReason;
+  final String? keptMonthReason;
 
   String get courseLabel => course?.label ?? '';
 

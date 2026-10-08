@@ -258,6 +258,49 @@ void main() {
     expect(plain.unusableReason, contains('也不克'));
   });
 
+  test('水局忌丁写在月柱日柱上，不成课的日子也带上', () {
+    final board = ZeriEngine.buildSolar(
+      year: 2026,
+      month: 10,
+      bureau: SittingBureau.water,
+    );
+    ZeriDay day(int solarDay) {
+      return board.days.singleWhere((item) => item.solarDay == solarDay);
+    }
+
+    final monthHit = day(1);
+    expect(monthHit.monthGanzhi, '丁酉');
+    expect(monthHit.course, isNull);
+    expect(monthHit.selectable, isFalse);
+    expect(monthHit.unusableReason, contains('水局忌丁，月柱含丁'));
+    expect(monthHit.unusableReason, contains('不生'));
+
+    final dayHit = day(10);
+    expect(dayHit.dayGanzhi, '丁巳');
+    expect(dayHit.course, isNull);
+    expect(dayHit.unusableReason, contains('水局忌丁，日柱含丁'));
+
+    final hourHit = day(8);
+    expect(hourHit.selectable, isTrue);
+    expect(hourHit.unusableReason, isNull);
+    expect(hourHit.keptMonthReason, isNull);
+    expect(hourHit.hourTabooReason, '水局忌丁，丁丑时、丁亥时不可选');
+
+    final generated = day(4);
+    expect(generated.dayGanzhi, '辛亥');
+    expect(generated.course, DayCourse.generate);
+    expect(generated.selectable, isTrue);
+    expect(generated.keptMonthReason, '水局忌丁，月柱含丁，这一天是月生日');
+    expect(generated.hourTabooReason, '水局忌丁，丁酉时不可选');
+
+    final generatedClear = day(5);
+    expect(generatedClear.dayGanzhi, '壬子');
+    expect(generatedClear.course, DayCourse.generate);
+    expect(generatedClear.selectable, isTrue);
+    expect(generatedClear.keptMonthReason, contains('这一天是月生日'));
+    expect(generatedClear.hourTabooReason, isNull);
+  });
+
   test('辛酉日不取泄金的子时', () {
     ZeriDay? found;
     for (var month = 1; month <= 12 && found == null; month++) {

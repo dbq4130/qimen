@@ -301,7 +301,11 @@ class ZeriEngine {
       ..._hits('日', dayGanzhi, bureau),
     ];
     final blockedReason = _blockedReason(monthZhi, dayGan, dayGanzhi);
-    final sharedStrict = sharedHits.any((hit) => hit.strict);
+    final keepMonthGenerate =
+        course == DayCourse.generate &&
+        blockedReason == null &&
+        sharedHits.any((hit) => hit.strict && hit.where == '月') &&
+        !sharedHits.any((hit) => hit.strict && hit.where != '月');
     final hours = <ZeriHour>[];
     final stemStart = _hourStemStart[dayGan]!;
     for (var index = 0; index < _branches.length; index++) {
@@ -315,7 +319,11 @@ class ZeriEngine {
       }
       final ganzhi = '${_stems[(stemStart + index) % 10]}$zhi';
       final hourHits = _hits('时', ganzhi, bureau);
-      final sealedByTaboo = sharedStrict || hourHits.any((hit) => hit.strict);
+      final sealedByTaboo =
+          sharedHits.any(
+            (hit) => hit.strict && !(keepMonthGenerate && hit.where == '月'),
+          ) ||
+          hourHits.any((hit) => hit.strict);
       final sealed = blockedReason != null || sealedByTaboo;
       hours.add(
         ZeriHour(
@@ -328,7 +336,8 @@ class ZeriEngine {
           hourHits: hourHits,
           selectable: !sealed,
           showExclamation:
-              !sealed && (sharedHits.isNotEmpty || hourHits.isNotEmpty),
+              !sealed &&
+              (sharedHits.any((hit) => !hit.strict) || hourHits.isNotEmpty),
           sealedLabel: sealed ? (blockedReason != null ? '不能用' : '切记') : null,
         ),
       );
@@ -381,6 +390,10 @@ class ZeriEngine {
         sharedHits: sharedHits,
         hours: hours,
       ),
+      hourTabooReason: _hourTabooReason(bureau: bureau, hours: hours),
+      keptMonthReason: keepMonthGenerate
+          ? '${bureau.label}忌${bureau.avoid.join('、')}，月柱含${sharedHits.firstWhere((hit) => hit.strict && hit.where == '月').character}，这一天是月生日'
+          : null,
     );
   }
 
@@ -393,33 +406,57 @@ class ZeriEngine {
     required List<ZeriHit> sharedHits,
     required List<ZeriHour> hours,
   }) {
-    if (hours.any((hour) => hour.selectable)) {
-      return null;
-    }
-    if (blockedReason != null) {
-      return blockedReason;
-    }
-    if (course == null) {
-      return '月支$monthZhi不生 日支$dayZhi，日支$dayZhi也不克月支$monthZhi';
-    }
-    final parts = <String>[
+    final reasons = <String>[];
+    final sharedStrict = [
       for (final hit in sharedHits)
         if (hit.strict) '${hit.where}柱含${hit.character}',
     ];
-    if (parts.isEmpty) {
-      for (final hour in hours) {
-        for (final hit in hour.hourHits) {
-          if (hit.strict) {
-            parts.add('${hour.ganzhi}时含${hit.character}');
-          }
-        }
+    if (sharedStrict.isNotEmpty) {
+      reasons.add(
+        '${bureau.label}忌${bureau.avoid.join('、')}，${sharedStrict.join('、')}',
+      );
+    }
+    if (blockedReason != null) {
+      reasons.add(blockedReason);
+    }
+    if (course == null) {
+      reasons.add('月支$monthZhi不生 日支$dayZhi，日支$dayZhi也不克月支$monthZhi');
+    } else if (sharedStrict.isEmpty &&
+        blockedReason == null &&
+        !hours.any((hour) => hour.selectable)) {
+      final hourParts = <String>[
+        for (final hour in hours)
+          for (final hit in hour.hourHits)
+            if (hit.strict) '${hour.ganzhi}时含${hit.character}',
+      ];
+      if (hourParts.isNotEmpty) {
+        reasons.add(
+          '${bureau.label}忌${bureau.avoid.join('、')}，${hourParts.join('、')}',
+        );
       }
     }
-    final avoid = bureau.avoid.join('、');
-    if (parts.isEmpty) {
-      return '${bureau.label}忌$avoid';
+    if (reasons.isEmpty || hours.any((hour) => hour.selectable)) {
+      return null;
     }
-    return '${bureau.label}忌$avoid，${parts.join('、')}';
+    return reasons.join('\n');
+  }
+
+  static String? _hourTabooReason({
+    required SittingBureau bureau,
+    required List<ZeriHour> hours,
+  }) {
+    if (!hours.any((hour) => hour.selectable)) {
+      return null;
+    }
+    final sealed = <String>[
+      for (final hour in hours)
+        if (!hour.selectable && hour.hourHits.any((hit) => hit.strict))
+          '${hour.ganzhi}时',
+    ];
+    if (sealed.isEmpty) {
+      return null;
+    }
+    return '${bureau.label}忌${bureau.avoid.join('、')}，${sealed.join('、')}不可选';
   }
 
   static DayCourse? _courseOf(String monthZhi, String dayZhi) {

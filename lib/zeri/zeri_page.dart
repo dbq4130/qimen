@@ -445,6 +445,20 @@ class _ZeriPageState extends State<ZeriPage> {
     );
   }
 
+  String? _dayNote(ZeriDay day) {
+    if (day.unusableReason != null) {
+      return day.unusableReason;
+    }
+    final lines = <String>[
+      if (day.keptMonthReason != null) day.keptMonthReason!,
+      if (day.hourTabooReason != null) day.hourTabooReason!,
+    ];
+    if (lines.isEmpty) {
+      return null;
+    }
+    return lines.join('\n');
+  }
+
   Widget _buildDayDetail(ZeriDay day) {
     return _PaperCard(
       child: Column(
@@ -467,10 +481,10 @@ class _ZeriPageState extends State<ZeriPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (day.unusableReason != null) ...[
+          if (_dayNote(day) != null) ...[
             const SizedBox(height: 12),
             Text(
-              day.unusableReason!,
+              _dayNote(day)!,
               key: const ValueKey('zeri_unusable_reason'),
               style: const TextStyle(
                 color: Color(0xFF9C2F2F),
@@ -606,15 +620,21 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = day.selectable;
+    final limited = day.keptMonthReason != null;
     final weekend =
         day.weekday == DateTime.saturday || day.weekday == DateTime.sunday;
+    const limitedColor = Color(0xFFC47B2B);
     final numberColor = !enabled
         ? const Color(0xFFB7A894)
+        : limited
+        ? limitedColor
         : weekend
         ? const Color(0xFF2F6BFF)
         : const Color(0xFF1C1C1C);
     final subColor = !enabled
         ? const Color(0xFFC8BBA8)
+        : limited
+        ? limitedColor
         : day.favoredMonth
         ? const Color(0xFF9C2F2F)
         : const Color(0xFF8A8175);
@@ -636,9 +656,11 @@ class _DayCell extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: selected
                     ? BoxDecoration(
-                        color: enabled
-                            ? const Color(0xFF2F6BFF)
-                            : const Color(0xFFD6E3F8),
+                        color: !enabled
+                            ? const Color(0xFFD6E3F8)
+                            : limited
+                            ? limitedColor
+                            : const Color(0xFF2F6BFF),
                         shape: BoxShape.circle,
                       )
                     : null,

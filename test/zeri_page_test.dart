@@ -102,4 +102,36 @@ void main() {
     final decoration = mark.decoration! as BoxDecoration;
     expect(decoration.color, const Color(0xFFD6E3F8));
   });
+
+  testWidgets('忌丁月里的月生日用琥珀色', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ZeriPage(
+          initialYear: 2026,
+          initialMonth: 10,
+          initialBureau: SittingBureau.water,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final markKey = const ValueKey('zeri_day_mark_2026-10-04');
+    await tester.ensureVisible(find.byKey(markKey));
+    Text number() {
+      return tester.widget<Text>(
+        find.descendant(of: find.byKey(markKey), matching: find.text('4')),
+      );
+    }
+
+    expect(number().style?.color, const Color(0xFFC47B2B));
+
+    await tester.tap(find.byKey(const ValueKey('zeri_day_2026-10-04')));
+    await tester.pumpAndSettle();
+
+    final mark = tester.widget<Container>(find.byKey(markKey));
+    final decoration = mark.decoration! as BoxDecoration;
+    expect(decoration.color, const Color(0xFFC47B2B));
+    expect(number().style?.color, Colors.white);
+    expect(find.textContaining('这一天是月生日'), findsOneWidget);
+  });
 }
