@@ -247,7 +247,7 @@ class _QimenPageState extends State<QimenPage> {
         foregroundColor: Colors.white,
         leading: IconButton(
           key: const ValueKey('qimen_zeri_button'),
-          tooltip: '天星择日',
+          tooltip: '择日',
           onPressed: () {
             Navigator.of(
               context,

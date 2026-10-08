@@ -157,7 +157,7 @@ class _ZeriPageState extends State<ZeriPage> {
     final day = pick.day;
     final hour = pick.hour;
     return [
-      '【天星择日】',
+      '【择日】',
       '坐局：${_bureau.label}',
       '${day.yearGanzhi}年 ${day.monthGanzhi}月 ${day.dayGanzhi}日 ${hour.ganzhi}时',
       '阳历：${day.solarText} ${hour.rangeText}',
@@ -186,7 +186,7 @@ class _ZeriPageState extends State<ZeriPage> {
     final atEnd = _year >= ZeriEngine.maxYear && _month == 12;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('天星择日'),
+        title: const Text('择日'),
         centerTitle: true,
         backgroundColor: const Color(0xFF3C2A18),
         foregroundColor: Colors.white,

@@ -6,7 +6,7 @@ import 'package:qimen/zeri/zeri_models.dart';
 import 'package:qimen/zeri/zeri_page.dart';
 
 void main() {
-  testWidgets('首页左上角进入天星择日', (tester) async {
+  testWidgets('首页左上角进入择日', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: QimenPage()));
     await tester.pumpAndSettle();
 
@@ -14,7 +14,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('qimen_zeri_button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('天星择日'), findsOneWidget);
+    expect(find.text('择日'), findsOneWidget);
     expect(find.byKey(const ValueKey('zeri_bureau_button')), findsOneWidget);
     expect(find.text('火局'), findsOneWidget);
   });
