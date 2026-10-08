@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../qizheng/qizheng_page.dart';
+import '../zeri/zeri_page.dart';
 import '../ziwei/ziwei_page.dart';
 import 'qimen_engine.dart';
 import 'qimen_models.dart';
@@ -244,6 +245,36 @@ class _QimenPageState extends State<QimenPage> {
         centerTitle: true,
         backgroundColor: const Color(0xFF3C2A18),
         foregroundColor: Colors.white,
+        leading: IconButton(
+          key: const ValueKey('qimen_zeri_button'),
+          tooltip: '天星择日',
+          onPressed: () {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => const ZeriPage()));
+          },
+          icon: const DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color(0xFFFFD27A),
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: Center(
+                child: Text(
+                  '择',
+                  style: TextStyle(
+                    color: Color(0xFF3C2A18),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () {
